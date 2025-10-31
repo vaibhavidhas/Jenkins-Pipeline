@@ -40,7 +40,6 @@ pipeline {
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 bat """
@@ -50,15 +49,17 @@ pipeline {
             }
         }
 
-        stage('Pubat Docker Image') {
+        stage('Publish Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    bat "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin ${DOCKER_REGISTRY}"
-                    bat "docker pubat ${DOCKER_USER}/${APP_NAME}:${VERSION}"
+                    bat """
+                    echo Logging in to Docker Hub...
+                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                    docker push %DOCKER_USER%/cl-backend:1.0.4
+                    """
                 }
             }
         }
-    }
 
     post {
         success {
