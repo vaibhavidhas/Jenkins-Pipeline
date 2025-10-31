@@ -27,16 +27,14 @@ pipeline {
             steps {
                 echo 'Creating versioned artifact...'
                 bat '''
-                    for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (
-                        set ver=%%~v
-                    )
-                    set ver=%ver:"=%
-                    echo Detected version: %ver%
-                    powershell Compress-Archive -Path dist\\* -DestinationPath cl-backend-%ver%.zip -Force
+                for /F "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (set ver=%%~v)
+                set ver=%ver:"=%
+                echo Detected version: %ver%
+                powershell Compress-Archive -Path dist\\* -DestinationPath cl-backend-%ver%.zip -Force
                 '''
             }
-        }     
-
+        }
+   
         stage('Build Docker Image') {
             steps {
                 bat "docker build -t ${DOCKER_USER}/${APP_NAME}:${VERSION} ."
