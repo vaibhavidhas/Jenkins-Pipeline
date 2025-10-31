@@ -11,7 +11,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/vaibhavidhas/cl-backend.git'
+                git branch: 'main', url: 'https://github.com/vaibhavidhas/Jenkins-Pipeline.git'
             }
         }
 
