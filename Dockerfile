@@ -25,14 +25,12 @@ ENV NODE_ENV=production
 WORKDIR $APP_HOME
 
 # -----------------------------
-# Download your artifact ZIP
-# (Jenkins or you will replace the URL dynamically)
+# Copy artifact directly from Jenkins workspace
 # -----------------------------
-ARG ARTIFACT_URL
-RUN echo "Downloading artifact from $ARTIFACT_URL" && \
-    curl -L $ARTIFACT_URL -o artifact.zip && \
-    unzip artifact.zip && \
-    rm artifact.zip
+# The wildcard (*) allows copying any versioned zip, e.g. cl-backend-1.0.4.zip
+COPY cl-backend-*.zip artifact.zip
+
+RUN unzip artifact.zip && rm artifact.zip
 
 # -----------------------------
 # Install Node.js dependencies (if package.json is inside the artifact)
@@ -48,4 +46,3 @@ EXPOSE 3000
 # Define the entry command
 # -----------------------------
 ENTRYPOINT ["node", "dist/server.js"]
-
