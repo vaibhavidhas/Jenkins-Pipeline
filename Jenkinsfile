@@ -32,7 +32,12 @@ pipeline {
                 set ver=%ver: =%
                 echo Detected version: %ver%
                 powershell Compress-Archive -Path dist\\* -DestinationPath cl-backend-%ver%.zip -Force
+                echo VERSION=%ver% >> version.txt
                 '''
+                script {
+                    env.VERSION = readFile('version.txt').trim().split('=')[1]
+                    echo "Pipeline VERSION variable set to ${env.VERSION}"
+                }
             }
         }
 
