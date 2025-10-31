@@ -48,7 +48,6 @@ pipeline {
                 """
             }
         }
-
         stage('Publish Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -60,6 +59,7 @@ pipeline {
                 }
             }
         }
+
     }
 
     post {
