@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "build": "echo Building project... && mkdir dist && copy server.js dist\\server.js"
+    "build": "echo Building project... && if exist dist rmdir /s /q dist && mkdir dist && copy server.js dist\\server.js"
+
   },
   "keywords": [],
   "author": "",
