@@ -26,12 +26,15 @@ pipeline {
         stage('Create Artifact') {
             steps {
                 script {
-                    env.VERSION = bat(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
+                    env.VERSION = bat(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
                 }
-                bat 'zip -r ${APP_NAME}-${VERSION}.zip dist/'
-                archiveArtifacts artifacts: '${APP_NAME}-${VERSION}.zip', fingerprint: true
-            }
+                bat """
+                powershell Compress-Archive -Path dist\\* -DestinationPath ${APP_NAME}-${VERSION}.zip -Force
+                """
+                archiveArtifacts artifacts: "${APP_NAME}-${VERSION}.zip", fingerprint: true
+            }   
         }
+
 
         stage('Build Docker Image') {
             steps {
