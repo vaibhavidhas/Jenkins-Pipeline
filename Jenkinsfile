@@ -25,16 +25,17 @@ pipeline {
 
         stage('Create Artifact') {
             steps {
-                script {
-                    env.VERSION = bat(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
-                }
-                bat """
-                powershell Compress-Archive -Path dist\\* -DestinationPath ${APP_NAME}-${VERSION}.zip -Force
-                """
-                archiveArtifacts artifacts: "${APP_NAME}-${VERSION}.zip", fingerprint: true
-            }   
-        }
-
+                echo 'Creating versioned artifact...'
+                bat '''
+                    for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (
+                        set ver=%%~v
+                    )
+                    set ver=%ver:"=%
+                    echo Detected version: %ver%
+                    powershell Compress-Archive -Path dist\\* -DestinationPath cl-backend-%ver%.zip -Force
+                '''
+            }
+        }     
 
         stage('Build Docker Image') {
             steps {
