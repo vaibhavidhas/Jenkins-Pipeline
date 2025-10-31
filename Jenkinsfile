@@ -18,32 +18,32 @@ pipeline {
         stage('Install & Build') {
             steps {
                 echo "Installing dependencies and building project..."
-                sh 'npm install'
-                sh 'npm run build'
+                bat 'npm install'
+                bat 'npm run build'
             }
         }
 
         stage('Create Artifact') {
             steps {
                 script {
-                    env.VERSION = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
+                    env.VERSION = bat(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
                 }
-                sh 'zip -r ${APP_NAME}-${VERSION}.zip dist/'
+                bat 'zip -r ${APP_NAME}-${VERSION}.zip dist/'
                 archiveArtifacts artifacts: '${APP_NAME}-${VERSION}.zip', fingerprint: true
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_USER}/${APP_NAME}:${VERSION} ."
+                bat "docker build -t ${DOCKER_USER}/${APP_NAME}:${VERSION} ."
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Pubat Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin ${DOCKER_REGISTRY}"
-                    sh "docker push ${DOCKER_USER}/${APP_NAME}:${VERSION}"
+                    bat "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin ${DOCKER_REGISTRY}"
+                    bat "docker pubat ${DOCKER_USER}/${APP_NAME}:${VERSION}"
                 }
             }
         }
@@ -51,7 +51,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Successfully built and pushed ${DOCKER_USER}/${APP_NAME}:${VERSION}"
+            echo "✅ Successfully built and pubated ${DOCKER_USER}/${APP_NAME}:${VERSION}"
         }
         failure {
             echo "❌ Build failed!"
