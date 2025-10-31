@@ -1,0 +1,19 @@
+{
+  "name": "jenkins",
+  "version": "1.0.4",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "zip": "node zip-dist.js",
+    "build:zip": "npm run zip"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "express": "^5.1.0"
+  }
+}
