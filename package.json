@@ -6,8 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "zip": "node zip-dist.js",
-    "build:zip": "npm run zip"
+    "build": "echo Building project... && mkdir dist && copy server.js dist\\server.js"
   },
   "keywords": [],
   "author": "",
