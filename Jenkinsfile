@@ -41,12 +41,15 @@ pipeline {
             }
         }
 
-   
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t ${DOCKER_USER}/${APP_NAME}:${VERSION} ."
+                echo "🐳 Building Docker image..."
+                bat """
+                    docker build --build-arg ARTIFACT_URL=file:///C:/ProgramData/Jenkins/.jenkins/workspace/Jenkins_Pipeline/cl-backend-${VERSION}.zip -t ${DOCKER_USER}/${APP_NAME}:${VERSION} .
+                """
             }
         }
+
 
         stage('Pubat Docker Image') {
             steps {
