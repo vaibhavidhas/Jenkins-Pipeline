@@ -28,7 +28,7 @@ pipeline {
                 echo 'Creating versioned artifact...'
                 bat '''
                 for /F "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (set ver=%%~v)
-                set ver=%ver:"=%
+  
                 set ver=%ver: =%
                 echo Detected version: %ver%
                 powershell Compress-Archive -Path dist\\* -DestinationPath cl-backend-%ver%.zip -Force
