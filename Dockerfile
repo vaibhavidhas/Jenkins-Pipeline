@@ -21,8 +21,10 @@ RUN apt-get update && \
 ENV APP_HOME=/usr/src/app
 ENV NODE_ENV=production
 
+RUN mkdir -p $APP_HOME
 # Create app directory
 WORKDIR $APP_HOME
+RUN ls -ltra
 
 # -----------------------------
 # Copy artifact directly from Jenkins workspace

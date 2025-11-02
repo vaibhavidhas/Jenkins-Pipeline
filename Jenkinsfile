@@ -20,6 +20,7 @@ pipeline {
                 echo "Installing dependencies and building project..."
                 bat 'npm install'
                 bat 'npm run build'
+                bat 'dir dist'
             }
         }
 
