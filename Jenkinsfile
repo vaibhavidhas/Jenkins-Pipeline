@@ -88,15 +88,15 @@ stage('Archive Artifact') {
                 }
             }
         }
-        
         stage('Build Docker Image') {
-            steps {
-                bat """
-                echo "Building Docker image..."
-                docker build --build-arg ARTIFACT_URL=file:///C:/ProgramData/Jenkins/.jenkins/workspace/Jenkins_Pipeline/cl-backend-1.0.4.zip -t vaibhavi2808/cl-backend:1.0.4 .
-                """
-            }
-        }
+    steps {
+        bat '''
+            echo "Building Docker image..."
+            docker build -t vaibhavi2808/cl-backend:%VERSION% .
+        '''
+    }
+}
+
         stage('Publish Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
