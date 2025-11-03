@@ -22,4 +22,4 @@ RUN echo "✅ Contents of /usr/src/app after unzip:" && ls -R /usr/src/app
 EXPOSE 3000
 
 # Run the app
-ENTRYPOINT ["node", "dist/server.js"]
+ENTRYPOINT ["node", "server.js"]
