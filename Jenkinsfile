@@ -23,7 +23,6 @@ pipeline {
                 bat 'dir dist'
             }
         }
-
 stage('Package Artifact') {
     steps {
         echo "📦 Creating versioned artifact (with dist folder)..."
@@ -44,19 +43,23 @@ stage('Package Artifact') {
             Write-Host "Detected version: $ver"
             "VERSION=$ver" | Out-File -Encoding ascii version.txt
 
-            # Define paths
+            # Define output file
             $zipPath = "cl-backend-$ver.zip"
-            $zipTemp = Join-Path $env:TEMP "artifact.zip"
+
+            # Use a UNIQUE temp zip name to avoid conflicts
+            $tempZip = Join-Path $env:TEMP ("artifact_{0}.zip" -f (Get-Random))
+
+            # Cleanup any old files
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-            if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
+            if (Test-Path $tempZip) { Remove-Item $tempZip -Force }
 
-            # ✅ Zip the entire dist folder (includes folder name)
+            # Create zip (includes full dist folder)
             Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $zipTemp)
-            Copy-Item $zipTemp $zipPath -Force
-            Remove-Item $zipTemp -Force
+            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $tempZip)
+            Copy-Item $tempZip $zipPath -Force
+            Remove-Item $tempZip -Force
 
-            # Verify
+            # Verify contents
             Write-Host "📦 Verifying ZIP contents..."
             if (Test-Path "verify_zip") { Remove-Item "verify_zip" -Recurse -Force }
             Expand-Archive -Path $zipPath -DestinationPath "verify_zip" -Force
