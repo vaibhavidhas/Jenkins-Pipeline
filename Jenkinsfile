@@ -25,27 +25,28 @@ pipeline {
         }
 
         stage('Create Artifact') {
-            steps {
-                echo 'Creating versioned .zip artifact...'
-                powershell '''
-                $p = Get-Content -Raw "package.json" | ConvertFrom-Json
-                $ver = $p.version.Trim()
-                Write-Host "Detected version: $ver"
+    steps {
+        echo 'Creating versioned .zip artifact...'
+        powershell '''
+        $p = Get-Content -Raw "package.json" | ConvertFrom-Json
+        $ver = $p.version.Trim()
+        Write-Host "Detected version: $ver"
 
-                $zipName = "cl-backend-$ver.zip"
-                if (Test-Path $zipName) { Remove-Item $zipName -Force }
+        $zipName = "cl-backend-$ver.zip"
+        if (Test-Path $zipName) { Remove-Item $zipName -Force }
 
-                # ✅ Include dist folder itself
-                Compress-Archive -Path "dist" -DestinationPath $zipName -Force
+        # ✅ Correct way: include folder itself, not just contents
+        Compress-Archive -Path "dist" -DestinationPath $zipName -Force
 
-                "VERSION=$ver" | Out-File -Encoding ascii version.txt
-                '''
-                script {
-                    env.VERSION = readFile('version.txt').trim().split('=')[1]
-                    echo "✅ Pipeline VERSION variable set to ${env.VERSION}"
-                }
-            }
+        "VERSION=$ver" | Out-File -Encoding ascii version.txt
+        '''
+        script {
+            env.VERSION = readFile('version.txt').trim().split('=')[1]
+            echo "✅ Pipeline VERSION variable set to ${env.VERSION}"
         }
+    }
+}
+
 
         stage('Docker Login') {
             steps {
