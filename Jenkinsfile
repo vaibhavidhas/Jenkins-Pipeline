@@ -28,6 +28,16 @@ stage('Package Artifact') {
     steps {
         echo "📦 Creating versioned artifact (with dist folder)..."
         powershell '''
+            # Ensure we are at project root (one level above dist)
+            if (-not (Test-Path "dist/server.js")) {
+                Write-Host "⚠️ dist/server.js not found — changing to parent directory..."
+                Set-Location ..
+                if (-not (Test-Path "dist/server.js")) {
+                    Write-Error "❌ dist folder not found in expected location!"
+                    exit 1
+                }
+            }
+
             # Read version from package.json
             $p = Get-Content -Raw "package.json" | ConvertFrom-Json
             $ver = $p.version.Trim()
@@ -42,8 +52,13 @@ stage('Package Artifact') {
             # Remove old zip if exists
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
-            # Compress the dist folder (keep the folder structure)
+            # Compress the dist folder (keep top-level dist/)
             Compress-Archive -Path "dist" -DestinationPath $zipPath -Force
+
+            # Verify ZIP content for debugging
+            Write-Host "📦 Verifying ZIP contents..."
+            Expand-Archive -Path $zipPath -DestinationPath "verify_zip" -Force
+            Get-ChildItem -Recurse "verify_zip"
 
             Write-Host "✅ Artifact created: $zipPath"
         '''
@@ -53,6 +68,7 @@ stage('Package Artifact') {
         }
     }
 }
+
 
 stage('Archive Artifact') {
     steps {
