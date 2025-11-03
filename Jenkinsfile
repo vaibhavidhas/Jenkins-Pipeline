@@ -55,7 +55,8 @@ stage('Package Artifact') {
 
             # Create zip (includes full dist folder)
             Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $tempZip)
+   Compress-Archive -Path "dist" -DestinationPath $tempZip -Force
+
             Copy-Item $tempZip $zipPath -Force
             Remove-Item $tempZip -Force
 
