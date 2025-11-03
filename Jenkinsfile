@@ -91,18 +91,17 @@ stage('Archive Artifact') {
                 }
             }
         }
+
 stage('Build Docker Image') {
     steps {
-        echo '"Building Docker image..."'
-        script {
-            def artifactUrl = "${env.BUILD_URL}artifact/cl-backend-${env.VERSION}.zip"
-            echo "Using artifact URL: ${artifactUrl}"
-            bat """
-                docker build --build-arg ARTIFACT_URL=${artifactUrl} -t ${DOCKER_USER}/${APP_NAME}:${env.VERSION} .
-            """
-        }
+        echo "🛠 Building Docker image using local artifact..."
+        bat """
+            copy cl-backend-%VERSION%.zip .\\artifact.zip
+            docker build --build-arg ARTIFACT_FILE=artifact.zip -t %DOCKER_USER%/%APP_NAME%:%VERSION% .
+        """
     }
 }
+
 
 
         stage('Publish Docker Image') {
