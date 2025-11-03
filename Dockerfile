@@ -1,22 +1,36 @@
-# Use Ubuntu base and install Node.js
+# Use Ubuntu as base image
 FROM ubuntu:22.04
 
+# Set environment variables
+ENV NODE_VERSION=20.x
+ENV NODE_HOME=/usr/local/node
+ENV PATH=$NODE_HOME/bin:$PATH
+
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
 RUN apt-get update && \
-    apt-get install -y curl unzip ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
+    apt-get install -y curl unzip && \
+    # Install Node.js
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - && \
+    apt-get install -y nodejs && \
+    # Clean up
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src/app
+# Set working directory
+WORKDIR /app
 
-# Copy artifact from Jenkins workspace (no curl, no ARTIFACT_URL)
-COPY cl-backend-*.zip ./artifact.zip
+# Download and extract artifact
+# Replace ARTIFACT_URL with your actual artifact URL
+ARG ARTIFACT_URL
+RUN curl -L ${ARTIFACT_URL} -o artifact.zip && \
+    unzip artifact.zip && \
+    rm artifact.zip
 
-# Unzip into /usr/src/app
-RUN unzip artifact.zip -d /usr/src/app && rm artifact.zip
-
-# Show contents for debug
-RUN echo "📂 App contents:" && ls -R /usr/src/app
-
+# Expose port (adjust if needed)
 EXPOSE 3000
 
+# Start the application
 CMD ["node", "dist/server.js"]
