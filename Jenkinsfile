@@ -55,7 +55,23 @@ stage('Package Artifact') {
 
             # Create zip (includes full dist folder)
             Add-Type -AssemblyName System.IO.Compression.FileSystem
-   Compress-Archive -Path "dist" -DestinationPath $tempZip -Force
+# Create ZIP with forward slashes (Linux-friendly)
+$zipTemp = Join-Path $env:TEMP "artifact_fixed.zip"
+if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::Open($zipTemp, [System.IO.Compression.ZipArchiveMode]::Create)
+Get-ChildItem -Recurse -Path "dist" | ForEach-Object {
+    if (-not $_.PSIsContainer) {
+        $entryName = $_.FullName.Substring((Resolve-Path "dist").Path.Length + 1) -replace '\\', '/'
+        $entryPath = "dist/$entryName"
+        $zip.CreateEntryFromFile($_.FullName, $entryPath)
+    }
+}
+$zip.Dispose()
+Copy-Item $zipTemp $zipPath -Force
+Remove-Item $zipTemp -Force
+
 
             Copy-Item $tempZip $zipPath -Force
             Remove-Item $tempZip -Force
