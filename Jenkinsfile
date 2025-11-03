@@ -25,22 +25,22 @@ pipeline {
         }
 
         stage('Create Artifact') {
-            steps {
-                echo 'Creating versioned artifact...'
-                bat '''
-                for /F "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (set ver=%%~v)
-                set ver=%ver: =%
-                echo Detected version: %ver%
-
-                REM Ensure we only zip the dist/server.js file, preserving folder structure (dist/server.js)
-                powershell -Command "tar -cf cl-backend-%ver%.tar dist"
-                echo VERSION=%ver% >> version.txt
-                '''
-                script {
-                    env.VERSION = readFile('version.txt').trim().split('=')[1]
-                    echo "Pipeline VERSION variable set to ${env.VERSION}"
-                }
+          steps {
+            bat '''
+            powershell -NoProfile -Command ^
+              "$p = Get-Content -Raw package.json | ConvertFrom-Json; ^
+               $ver = $p.version; ^
+               Write-Host \"Detected version: $ver\"; ^
+               $zipName = \"cl-backend-$ver.zip\"; ^
+               if (Test-Path $zipName) { Remove-Item $zipName -Force }; ^
+               Compress-Archive -Path 'dist' -DestinationPath $zipName -Force; ^
+               Write-Output \"VERSION=$ver\" | Out-File -Encoding ascii version.txt"
+            '''
+            script {
+              env.VERSION = readFile('version.txt').trim().split('=')[1]
+              echo "Pipeline VERSION variable set to ${env.VERSION}"
             }
+          }
         }
 
         stage('Docker Login') {
