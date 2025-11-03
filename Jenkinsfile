@@ -24,35 +24,25 @@ pipeline {
             }
         }
 
-stage('Create Artifact') {
+stage('Package Artifact') {
     steps {
-        echo 'Creating versioned .zip artifact...'
+        echo "Zipping dist folder..."
         powershell '''
-        $workspace = Get-Location
-        Write-Host "Current workspace: $workspace"
-
-        $p = Get-Content -Raw "$workspace\\package.json" | ConvertFrom-Json
-        $ver = $p.version.Trim()
-        Write-Host "Detected version: $ver"
-
-        $zipName = "cl-backend-$ver.zip"
-        if (Test-Path "$workspace\\$zipName") { Remove-Item "$workspace\\$zipName" -Force }
-
-        Write-Host "Listing dist contents before compress:"
-        Get-ChildItem -Recurse "$workspace\\dist"
-
-         ✅ Include the whole dist folder
-        Compress-Archive -Path "$workspace\\dist" -DestinationPath $zipPath -Force
-        Write-Host "Created zip: $zipPath"
-
-        "VERSION=$ver" | Out-File -Encoding ascii "$workspace\\version.txt"
+            $zipPath = "${env:APP_NAME}-$env:VERSION.zip"
+            if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+            Compress-Archive -Path "dist" -DestinationPath $zipPath -Force
+            Write-Host "Artifact created: $zipPath"
         '''
-        script {
-            env.VERSION = readFile('version.txt').trim().split('=')[1]
-            echo "✅ Pipeline VERSION variable set to ${env.VERSION}"
-        }
     }
 }
+
+stage('Archive Artifact') {
+    steps {
+        echo "Archiving build artifact..."
+        archiveArtifacts artifacts: "${APP_NAME}-${VERSION}.zip", fingerprint: true
+    }
+}
+
 
         stage('Docker Login') {
             steps {
