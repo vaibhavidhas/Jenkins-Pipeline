@@ -33,7 +33,8 @@ pipeline {
                 echo Detected version: %ver%
         
                 REM Normalize paths to use forward slashes before zipping
-                powershell -Command "Compress-Archive -Path (Get-ChildItem -Path dist -Recurse | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath cl-backend-%ver%.zip -Force"
+                powershell -Command "Compress-Archive -Path dist -DestinationPath cl-backend-%ver%.zip -Force"
+
         
                 echo VERSION=%ver% >> version.txt
                 '''
