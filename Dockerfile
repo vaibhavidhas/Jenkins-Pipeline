@@ -1,29 +1,24 @@
-# Start from a lightweight Node base image (includes Node & npm)
+# Use Node.js base image
 FROM node:20-alpine
 
-# Install unzip (Alpine uses apk instead of apt)
-RUN apk add --no-cache unzip
-
-# Set the working directory
+# Set working directory
 WORKDIR /usr/src/app
 
-# Copy package files (required for dependency install)
+# Copy and install dependencies
 COPY package*.json ./
-
-# Install only production dependencies
 RUN npm install --only=production
 
-# Copy your Jenkins artifact (contains dist/server.js)
-COPY ./cl-backend-*.zip ./artifact.zip
+# Copy your Jenkins artifact ZIP
+COPY cl-backend-*.zip ./artifact.zip
 
-# Extract the artifact (unzip creates dist/server.js)
-RUN unzip artifact.zip && rm artifact.zip
+# Unzip it into /usr/src/app
+RUN unzip artifact.zip -d . && rm artifact.zip
 
-# (Optional) verify contents for debugging
+# Check structure for debugging
 RUN ls -R /usr/src/app
 
-# Expose the app port
+# Expose the port your app runs on
 EXPOSE 3000
 
-# Run your built server
+# Run the app
 CMD ["node", "dist/server.js"]
