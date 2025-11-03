@@ -52,8 +52,9 @@ stage('Package Artifact') {
             # Remove old zip if exists
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
-            # Compress the dist folder (keep top-level dist/)
-            Compress-Archive -Path "dist" -DestinationPath $zipPath -Force
+            # Convert backslashes to forward slashes before compressing
+            Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { $_.FullName -replace '\\', '/' }) -DestinationPath $zipPath -Force
+
 
             # Verify ZIP content for debugging
             Write-Host "📦 Verifying ZIP contents..."
