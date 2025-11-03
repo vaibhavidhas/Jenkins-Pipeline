@@ -52,8 +52,14 @@ stage('Package Artifact') {
             # Remove old zip if exists
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
-            # Convert backslashes to forward slashes before compressing
-         Compress-Archive -Path "dist" -DestinationPath $zipPath -Force
+        # Fix Windows backslashes in ZIP paths
+$zipTemp = Join-Path $env:TEMP "artifact.zip"
+if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
+
+Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { $_.FullName -replace '\\', '/' }) -DestinationPath $zipTemp -Force
+Copy-Item $zipTemp $zipPath -Force
+Remove-Item $zipTemp -Force
+
 
             # Verify ZIP content for debugging
             Write-Host "📦 Verifying ZIP contents..."
