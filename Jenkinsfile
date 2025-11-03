@@ -92,7 +92,7 @@ stage('Archive Artifact') {
     steps {
         bat '''
             echo "Building Docker image..."
-            bat "copy cl-backend-%VERSION%.zip ."
+            powershell 'Copy-Item cl-backend-*.zip .'
             docker build -t vaibhavi2808/cl-backend:%VERSION% .
         '''
     }
