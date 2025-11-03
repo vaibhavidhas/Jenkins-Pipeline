@@ -25,26 +25,46 @@ pipeline {
         }
 stage('Package Artifact') {
     steps {
-        echo "📦 Creating versioned artifact (with dist folder)..."
+        echo "📦 Creating versioned artifact (including dist folder)..."
         powershell '''
-            Write-Host "📦 Creating versioned artifact (with dist folder)..."
+            Write-Host "📦 Creating versioned artifact (including dist folder)..."
             $version = (Get-Content package.json | ConvertFrom-Json).version
             $artifact = "cl-backend-$version.zip"
 
+            # Clean up previous zips if any
+            if (Test-Path $artifact) { Remove-Item $artifact -Force }
+
+            # Create a temporary folder to hold dist/
+            $tempDir = "package_temp"
+            if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+            New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
+
+            # Copy the dist folder inside it
+            Copy-Item -Recurse -Path "dist" -Destination $tempDir
+
+            # Load compression library
             Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-            if (Test-Path $artifact) { Remove-Item $artifact }
+            # Create the zip (now contains the dist/ directory)
+            [System.IO.Compression.ZipFile]::CreateFromDirectory($tempDir, $artifact)
 
-            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $artifact)
+            # Cleanup temp directory
+            Remove-Item $tempDir -Recurse -Force
 
             Write-Host "✅ Artifact created: $artifact"
 
-            # Output version for Jenkins to capture
-            Write-Output "VERSION=$version" | Out-File -FilePath version.txt -Encoding UTF8
+            # Optional verification
+            if (Test-Path verify_zip) { Remove-Item verify_zip -Recurse -Force }
+            Expand-Archive -Path $artifact -DestinationPath verify_zip -Force
+            Write-Host "📂 Verifying ZIP contents..."
+            Get-ChildItem -Recurse verify_zip
+
+            # Export version for Jenkins
+            "VERSION=$version" | Out-File -Encoding ascii version.txt
         '''
         script {
             env.VERSION = readFile('version.txt').trim().split('=')[1]
-            echo "✅ Pipeline VERSION variable set to ${env.VERSION}"
+            echo "✅ VERSION set to ${env.VERSION}"
         }
     }
 }
