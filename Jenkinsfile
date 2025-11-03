@@ -33,7 +33,8 @@ pipeline {
                 bat 'dir dist'
             }
         }
-stage('Package Artifact') {
+
+        stage('Package Artifact') {
     steps {
         echo "📦 Creating versioned artifact (Linux-friendly ZIP)..."
         powershell '''
@@ -42,20 +43,18 @@ stage('Package Artifact') {
 
             if (Test-Path $artifact) { Remove-Item $artifact }
 
-            # Use .NET Zip APIs to ensure forward slashes
+            # Create ZIP with Linux-friendly paths
             Add-Type -AssemblyName System.IO.Compression.FileSystem
-            $zip = [System.IO.Compression.ZipFile]::Open($artifact, 'Create')
+            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $artifact)
 
-            Get-ChildItem -Recurse "dist" | ForEach-Object {
-                if (-not $_.PSIsContainer) {
-                    $entryName = $_.FullName.Substring((Resolve-Path "dist").Path.Length + 1) -replace '\\', '/'
-                    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, "dist/$entryName")
-                }
-            }
+            # Fix backslashes -> forward slashes inside ZIP entries
+            $tempDir = "verify_zip"
+            if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }
+            Expand-Archive -Path $artifact -DestinationPath $tempDir -Force
+            Remove-Item $artifact
+            Compress-Archive -Path (Get-ChildItem -Recurse $tempDir | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath $artifact -Force
 
-            $zip.Dispose()
             Write-Host "✅ Artifact created: $artifact"
-
             Write-Host "📂 Verifying ZIP contents..."
             Expand-Archive -Path $artifact -DestinationPath "verify_zip_final" -Force
             Get-ChildItem -Recurse "verify_zip_final"
