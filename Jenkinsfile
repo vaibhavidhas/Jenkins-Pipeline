@@ -32,8 +32,8 @@ pipeline {
                 set ver=%ver: =%
                 echo Detected version: %ver%
         
-                REM Compress the dist folder itself (so ZIP contains /dist/server.js)
-                powershell Compress-Archive -Path dist -DestinationPath cl-backend-%ver%.zip -Force
+                REM Normalize paths to use forward slashes before zipping
+                powershell -Command "Compress-Archive -Path (Get-ChildItem -Path dist -Recurse | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath cl-backend-%ver%.zip -Force"
         
                 echo VERSION=%ver% >> version.txt
                 '''
@@ -43,6 +43,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Docker Login') {
             steps {
