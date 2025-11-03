@@ -29,10 +29,12 @@ pipeline {
                 echo 'Creating versioned artifact...'
                 bat '''
                 for /F "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (set ver=%%~v)
-  
                 set ver=%ver: =%
                 echo Detected version: %ver%
-                powershell Compress-Archive -Path dist\\* -DestinationPath cl-backend-%ver%.zip -Force
+        
+                REM Compress the dist folder itself (so ZIP contains /dist/server.js)
+                powershell Compress-Archive -Path dist -DestinationPath cl-backend-%ver%.zip -Force
+        
                 echo VERSION=%ver% >> version.txt
                 '''
                 script {
