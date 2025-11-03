@@ -44,31 +44,23 @@ pipeline {
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    bat """
-                    echo Logging into Docker Hub...
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                    """
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
                 }
             }
         }
         
         stage('Build Docker Image') {
             steps {
-                bat """
-                echo "Building Docker image..."
-                docker build -t ${DOCKER_USER}/${APP_NAME}:${VERSION} .
-                """
+                script {
+                    bat "docker build -t ${DOCKER_USER}/${APP_NAME}:${VERSION} ."
+                }
             }
         }
 
         stage('Publish Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    bat """
-                    echo Logging in to Docker Hub...
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                    docker push ${DOCKER_USER}/${APP_NAME}:${VERSION}
-                    """
+                script {
+                    bat "docker push ${DOCKER_USER}/${APP_NAME}:${VERSION}"
                 }
             }
         }
