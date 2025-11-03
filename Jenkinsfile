@@ -24,21 +24,28 @@ pipeline {
             }
         }
 
-        stage('Create Artifact') {
+stage('Create Artifact') {
     steps {
         echo 'Creating versioned .zip artifact...'
         powershell '''
-        $p = Get-Content -Raw "package.json" | ConvertFrom-Json
+        $workspace = Get-Location
+        Write-Host "Current workspace: $workspace"
+
+        $p = Get-Content -Raw "$workspace\\package.json" | ConvertFrom-Json
         $ver = $p.version.Trim()
         Write-Host "Detected version: $ver"
 
         $zipName = "cl-backend-$ver.zip"
-        if (Test-Path $zipName) { Remove-Item $zipName -Force }
+        if (Test-Path "$workspace\\$zipName") { Remove-Item "$workspace\\$zipName" -Force }
 
-        # ✅ Correct way: include folder itself, not just contents
+        Write-Host "Listing dist contents before compress:"
+        Get-ChildItem -Recurse "$workspace\\dist"
+
+        # ✅ Include the 'dist' folder in the ZIP structure
+        Set-Location $workspace
         Compress-Archive -Path "dist" -DestinationPath $zipName -Force
 
-        "VERSION=$ver" | Out-File -Encoding ascii version.txt
+        "VERSION=$ver" | Out-File -Encoding ascii "$workspace\\version.txt"
         '''
         script {
             env.VERSION = readFile('version.txt').trim().split('=')[1]
@@ -46,7 +53,6 @@ pipeline {
         }
     }
 }
-
 
         stage('Docker Login') {
             steps {
