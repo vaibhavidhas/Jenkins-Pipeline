@@ -12,7 +12,7 @@ RUN npm install --only=production
 COPY cl-backend-*.zip ./artifact.zip
 
 # Unzip it into /usr/src/app
-RUN unzip artifact.zip && rm artifact.zip
+RUN unzip artifact.zip -d /usr/src/app && rm artifact.zip
 
 # Check structure for debugging
 RUN ls -R /usr/src/app
