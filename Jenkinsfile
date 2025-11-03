@@ -33,7 +33,7 @@ pipeline {
                 echo Detected version: %ver%
 
                 REM Ensure we only zip the dist/server.js file, preserving folder structure (dist/server.js)
-                powershell -Command "tar -cf cl-backend-%ver%.tar -C dist ."
+                powershell -Command "tar -cf cl-backend-%ver%.tar dist"
                 echo VERSION=%ver% >> version.txt
                 '''
                 script {
