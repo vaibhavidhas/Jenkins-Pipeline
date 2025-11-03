@@ -31,10 +31,10 @@ pipeline {
                 for /F "tokens=2 delims=:," %%v in ('findstr "version" package.json') do (set ver=%%~v)
                 set ver=%ver: =%
                 echo Detected version: %ver%
-        
-                REM Normalize paths to use forward slashes before zipping
-                powershell -Command "$files = Get-ChildItem -Path dist -Recurse | ForEach-Object { $_.FullName -replace '\\\\', '/' }; Compress-Archive -Path $files -DestinationPath cl-backend-%ver%.zip -Force"
-        
+
+                REM Ensure we only zip the dist/server.js file, preserving folder structure (dist/server.js)
+                powershell -Command "Compress-Archive -Path dist/* -DestinationPath cl-backend-%ver%.zip -Force"
+
                 echo VERSION=%ver% >> version.txt
                 '''
                 script {
@@ -43,7 +43,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Docker Login') {
             steps {
