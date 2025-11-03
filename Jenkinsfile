@@ -7,7 +7,7 @@ pipeline {
         DOCKER_REGISTRY = "docker.io"
     }
 
-  stages {
+    stages {
 
         stage('Checkout') {
             steps {
@@ -25,15 +25,6 @@ pipeline {
             }
         }
 
-
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/vaibhavidhas/Jenkins-Pipeline.git'
-            }
-        }
-
         stage('Install & Build') {
             steps {
                 echo "Installing dependencies and building project..."
@@ -42,93 +33,88 @@ pipeline {
                 bat 'dir dist'
             }
         }
-stage('Package Artifact') {
-    steps {
-        echo "📦 Creating versioned artifact (with Linux-friendly paths)..."
-        powershell '''
-            Write-Host "📦 Creating versioned artifact (Linux-friendly ZIP)..."
-            $version = (Get-Content package.json | ConvertFrom-Json).version
-            $artifact = "cl-backend-$version.zip"
 
-            if (Test-Path $artifact) { Remove-Item $artifact -Force }
+        stage('Package Artifact') {
+            steps {
+                echo "📦 Creating versioned artifact (with Linux-friendly paths)..."
+                powershell '''
+                    Write-Host "📦 Creating versioned artifact (Linux-friendly ZIP)..."
+                    $version = (Get-Content package.json | ConvertFrom-Json).version
+                    $artifact = "cl-backend-$version.zip"
 
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
+                    if (Test-Path $artifact) { Remove-Item $artifact -Force }
 
-            # Temporary folder to ensure clean structure
-            $temp = "package_temp"
-            if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
-            New-Item -ItemType Directory -Force -Path $temp | Out-Null
-            Copy-Item -Recurse dist $temp/dist
+                    Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-            # Create the ZIP file directly
-            [IO.Compression.ZipFile]::CreateFromDirectory($temp, $artifact)
+                    # Temporary folder to ensure clean structure
+                    $temp = "package_temp"
+                    if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
+                    New-Item -ItemType Directory -Force -Path $temp | Out-Null
+                    Copy-Item -Recurse dist $temp/dist
 
-            # Cleanup temp folder
-            Remove-Item $temp -Recurse -Force
+                    # Create the ZIP file directly
+                    [IO.Compression.ZipFile]::CreateFromDirectory($temp, $artifact)
 
-            Write-Host "✅ Artifact created: $artifact"
+                    # Cleanup temp folder
+                    Remove-Item $temp -Recurse -Force
 
-            # Optional verify step
-            Expand-Archive -Path $artifact -DestinationPath verify_zip -Force
-            Write-Host "📂 Verifying ZIP contents..."
-            Get-ChildItem -Recurse verify_zip
-        '''
-    }
-}
+                    Write-Host "✅ Artifact created: $artifact"
 
-stage('Archive Artifact') {
-    steps {
-        echo "Archiving build artifact..."
-        archiveArtifacts artifacts: "cl-backend-${VERSION}.zip", fingerprint: true
-    }
-}
+                    # Optional verify step
+                    Expand-Archive -Path $artifact -DestinationPath verify_zip -Force
+                    Write-Host "📂 Verifying ZIP contents..."
+                    Get-ChildItem -Recurse verify_zip
+                '''
+            }
+        }
 
+        stage('Archive Artifact') {
+            steps {
+                echo "Archiving build artifact..."
+                archiveArtifacts artifacts: "cl-backend-${VERSION}.zip", fingerprint: true
+            }
+        }
 
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat """
-                    echo Logging into Docker Hub...
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        echo Logging into Docker Hub...
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
                     """
                 }
             }
         }
 
-stage('Build Docker Image') {
-    steps {
-        echo "🛠 Building Docker image using local artifact..."
-        bat """
-            copy cl-backend-%VERSION%.zip .\\artifact.zip
-            docker build --build-arg ARTIFACT_FILE=artifact.zip -t %DOCKER_USER%/%APP_NAME%:%VERSION% .
-        """
-    }
-}
-
-
+        stage('Build Docker Image') {
+            steps {
+                echo "🛠 Building Docker image using local artifact..."
+                bat """
+                    copy cl-backend-%VERSION%.zip .\\artifact.zip
+                    docker build --build-arg ARTIFACT_FILE=artifact.zip -t %DOCKER_USER%/%APP_NAME%:%VERSION% .
+                """
+            }
+        }
 
         stage('Publish Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat """
-                    echo Logging in to Docker Hub...
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                    docker push %DOCKER_USER%/cl-backend:1.0.4
+                        echo Logging in to Docker Hub...
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        docker push %DOCKER_USER%/%APP_NAME%:%VERSION%
                     """
                 }
             }
         }
-
     }
 
     post {
         success {
-            echo "✅ Successfully built and pubated ${DOCKER_USER}/${APP_NAME}:${VERSION}"
+            echo "✅ Successfully built and published ${DOCKER_USER}/${APP_NAME}:${VERSION}"
         }
         failure {
             echo "❌ Build failed!"
         }
     }
 }
-
-
