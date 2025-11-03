@@ -25,22 +25,23 @@ pipeline {
         }
 
         stage('Create Artifact') {
-          steps {
-            bat '''
-            powershell -NoProfile -Command ^
-              "$p = Get-Content -Raw package.json | ConvertFrom-Json; ^
-               $ver = $p.version; ^
-               Write-Host \"Detected version: $ver\"; ^
-               $zipName = \"cl-backend-$ver.zip\"; ^
-               if (Test-Path $zipName) { Remove-Item $zipName -Force }; ^
-               Compress-Archive -Path 'dist' -DestinationPath $zipName -Force; ^
-               Write-Output \"VERSION=$ver\" | Out-File -Encoding ascii version.txt"
-            '''
-            script {
-              env.VERSION = readFile('version.txt').trim().split('=')[1]
-              echo "Pipeline VERSION variable set to ${env.VERSION}"
+            steps {
+                echo 'Creating versioned .zip artifact...'
+                bat '''
+                powershell -NoProfile -Command ^
+                    "$p = Get-Content -Raw 'package.json' | ConvertFrom-Json; ^
+                    $ver = $p.version.Trim(); ^
+                    Write-Host ('Detected version: ' + $ver); ^
+                    $zipName = 'cl-backend-' + $ver + '.zip'; ^
+                    if (Test-Path $zipName) { Remove-Item $zipName -Force }; ^
+                    Compress-Archive -Path 'dist/*' -DestinationPath $zipName -Force; ^
+                    'VERSION=' + $ver | Out-File -Encoding ascii version.txt"
+                '''
+                script {
+                    env.VERSION = readFile('version.txt').trim().split('=')[1]
+                    echo "✅ Pipeline VERSION variable set to ${env.VERSION}"
+                }
             }
-          }
         }
 
         stage('Docker Login') {
