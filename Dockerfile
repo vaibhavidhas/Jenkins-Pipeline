@@ -1,28 +1,56 @@
-# Use Node.js base image
-FROM node:20-alpine
+# ----------------------------------------------
+# 🧩 1. Use Ubuntu as the base image
+# ----------------------------------------------
+FROM ubuntu:22.04
 
-# Set working directory
-WORKDIR /usr/src/app
+# Prevent interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install unzip (for Alpine)
-RUN apk add --no-cache unzip
+# ----------------------------------------------
+# 🧩 2. Install required tools and Node.js
+# ----------------------------------------------
+RUN apt-get update && \
+    apt-get install -y curl unzip ca-certificates && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    node -v && npm -v
 
-# Copy Jenkins artifact (ZIP file)
-COPY cl-backend-*.zip ./artifact.zip
+# ----------------------------------------------
+# 🧩 3. Set environment variables
+# ----------------------------------------------
+ENV NODE_HOME=/usr/bin/node
+ENV APP_HOME=/usr/src/app
+ENV PATH=$NODE_HOME/bin:$PATH
 
-# ✅ Unzip artifact so that the /dist folder is extracted as-is
-RUN unzip artifact.zip -d /usr/src/app && rm artifact.zip
+# ----------------------------------------------
+# 🧩 4. Set working directory
+# ----------------------------------------------
+WORKDIR $APP_HOME
 
-# Show extracted structure (for debug)
-RUN echo "📂 Final structure after unzip:" && ls -R /usr/src/app
 
-# Install dependencies if a package.json exists inside dist
-RUN if [ -f "/usr/src/app/dist/package.json" ]; then \
-      cd /usr/src/app/dist && npm install --only=production; \
+# 5. Download artifact ZIP file
+#    (You can pass the URL during build time)
+
+ARG ARTIFACT_URL
+RUN if [ -z "$ARTIFACT_URL" ]; then \
+      echo "❌ ERROR: ARTIFACT_URL not provided!"; exit 1; \
+    else \
+      echo "📦 Downloading artifact from $ARTIFACT_URL ..."; \
+      curl -L "$ARTIFACT_URL" -o artifact.zip; \
     fi
 
-# Expose app port
+
+#  6. Unzip artifact and verify structure
+
+RUN unzip artifact.zip -d $APP_HOME && rm artifact.zip && \
+    echo "📂 Final file structure:" && ls -R $APP_HOME
+
+# ----------------------------------------------
+#  7. Expose port (if applicable)
+# ----------------------------------------------
 EXPOSE 3000
 
-# Start the app from the dist folder
-ENTRYPOINT ["node", "dist/server.js"]
+# ----------------------------------------------
+#  8. Run the app
+# ----------------------------------------------
+CMD ["node", "dist/server.js"]
