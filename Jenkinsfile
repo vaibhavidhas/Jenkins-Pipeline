@@ -33,28 +33,26 @@ stage('Package Artifact') {
 
             if (Test-Path $artifact) { Remove-Item $artifact -Force }
 
-            # Ensure we zip dist/ folder and use forward slashes
             Add-Type -AssemblyName System.IO.Compression.FileSystem
 
+            # Temporary folder to ensure clean structure
             $temp = "package_temp"
             if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
             New-Item -ItemType Directory -Force -Path $temp | Out-Null
             Copy-Item -Recurse dist $temp/dist
 
-            # Create zip manually to normalize paths
-            $zipPath = Resolve-Path $artifact
-            if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+            # Create the ZIP file directly
+            [IO.Compression.ZipFile]::CreateFromDirectory($temp, $artifact)
 
-            [IO.Compression.ZipFile]::CreateFromDirectory($temp, $zipPath)
-
-            # Normalize paths (replace '\' with '/')
-            $zipBytes = [IO.File]::ReadAllBytes($zipPath)
-            $text = [Text.Encoding]::UTF8.GetString($zipBytes)
-            $text = $text -replace '\\\\', '/'
-            [IO.File]::WriteAllText($zipPath, $text)
-
+            # Cleanup temp folder
             Remove-Item $temp -Recurse -Force
+
             Write-Host "✅ Artifact created: $artifact"
+
+            # Optional verify step
+            Expand-Archive -Path $artifact -DestinationPath verify_zip -Force
+            Write-Host "📂 Verifying ZIP contents..."
+            Get-ChildItem -Recurse verify_zip
         '''
     }
 }
