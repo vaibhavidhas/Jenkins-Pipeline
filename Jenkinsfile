@@ -25,17 +25,21 @@ pipeline {
         }
 
         stage('Create Artifact') {
-            steps {
+           steps {
                 echo 'Creating versioned .zip artifact...'
-                bat '''
-                powershell -NoProfile -Command ^
-                    "$p = Get-Content -Raw 'package.json' | ConvertFrom-Json; ^
-                    $ver = $p.version.Trim(); ^
-                    Write-Host ('Detected version: ' + $ver); ^
-                    $zipName = 'cl-backend-' + $ver + '.zip'; ^
-                    if (Test-Path $zipName) { Remove-Item $zipName -Force }; ^
-                    Compress-Archive -Path 'dist/*' -DestinationPath $zipName -Force; ^
-                    'VERSION=' + $ver | Out-File -Encoding ascii version.txt"
+                // Use a single PowerShell command block instead of bat
+                powershell '''
+                $p = Get-Content -Raw "package.json" | ConvertFrom-Json
+                $ver = $p.version.Trim()
+                Write-Host "Detected version: $ver"
+
+                $zipName = "cl-backend-$ver.zip"
+                if (Test-Path $zipName) { Remove-Item $zipName -Force }
+
+                # Compress dist folder only (preserve folder structure)
+                Compress-Archive -Path "dist/*" -DestinationPath $zipName -Force
+
+                "VERSION=$ver" | Out-File -Encoding ascii version.txt
                 '''
                 script {
                     env.VERSION = readFile('version.txt').trim().split('=')[1]
