@@ -7,6 +7,15 @@ pipeline {
         DOCKER_REGISTRY = "docker.io"
     }
 
+    stage('Read Version') {
+    steps {
+        script {
+            def pkg = readJSON file: 'package.json'
+            env.VERSION = pkg.version
+            echo "📦 Version set to ${env.VERSION}"
+        }
+    }
+}
     stages {
 
         stage('Checkout') {
