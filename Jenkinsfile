@@ -60,7 +60,7 @@ pipeline {
         stage('Publish Docker Image') {
             steps {
                 script {
-                    bat "docker push ${DOCKER_USER}/${APP_NAME}:${VERSION}"
+                    bat "docker push ${DOCKER_USER}/${APP_NAME}:${VERSION} ."
                 }
             }
         }
