@@ -46,22 +46,17 @@ stage('Package Artifact') {
             # Save version to version.txt for Jenkins
             "VERSION=$ver" | Out-File -Encoding ascii version.txt
 
-            # Define zip name
-            $zipPath = "cl-backend-$ver.zip"
+            # Define zip name and dist path safely
+            $distPath = Resolve-Path "dist"
+            $zipPath = Join-Path (Resolve-Path ".\\") "cl-backend-$ver.zip"
 
             # Remove old zip if exists
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
-        # Fix Windows backslashes in ZIP paths
-$zipTemp = Join-Path $env:TEMP "artifact.zip"
-if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
+            # ✅ Create zip with the dist folder itself
+            Compress-Archive -Path $distPath -DestinationPath $zipPath -Force
 
-Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath $zipTemp -Force
-Copy-Item $zipTemp $zipPath -Force
-Remove-Item $zipTemp -Force
-
-
-            # Verify ZIP content for debugging
+            # Verify ZIP contents for debugging
             Write-Host "📦 Verifying ZIP contents..."
             Expand-Archive -Path $zipPath -DestinationPath "verify_zip" -Force
             Get-ChildItem -Recurse "verify_zip"
@@ -74,7 +69,6 @@ Remove-Item $zipTemp -Force
         }
     }
 }
-
 
 stage('Archive Artifact') {
     steps {
