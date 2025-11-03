@@ -46,35 +46,35 @@ stage('Package Artifact') {
             # Save version to version.txt for Jenkins
             "VERSION=$ver" | Out-File -Encoding ascii version.txt
 
-            # Define zip name and dist path safely
+            # Define zip name and paths
             $distPath = Resolve-Path "dist"
             $zipPath = Join-Path (Resolve-Path ".\\") "cl-backend-$ver.zip"
+            $zipTemp = Join-Path $env:TEMP "artifact.zip"
 
-            # Remove old zip if exists
+            # Clean up any old zips
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+            if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
 
-         # ✅ Create ZIP with Linux-friendly paths (forward slashes) and include the dist folder
-$zipTemp = Join-Path $env:TEMP "artifact.zip"
-if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
+            # ✅ Create ZIP including top-level "dist" folder
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $zip = [System.IO.Compression.ZipFile]::Open($zipTemp, [System.IO.Compression.ZipArchiveMode]::Update)
 
-# Recursively add files but normalize path separators
-Get-ChildItem -Recurse -Path "dist" | ForEach-Object {
-    $relativePath = $_.FullName.Substring((Resolve-Path "dist").Path.Length + 1) -replace '\\', '/'
-    if (-not $_.PSIsContainer) {
-        $entryPath = "dist/$relativePath"
-        Write-Host "Adding: $entryPath"
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $zip = [System.IO.Compression.ZipFile]::Open($zipTemp, [System.IO.Compression.ZipArchiveMode]::Update)
-        $zip.CreateEntryFromFile($_.FullName, $entryPath)
-        $zip.Dispose()
-    }
-}
-Copy-Item $zipTemp $zipPath -Force
-Remove-Item $zipTemp -Force
+            Get-ChildItem -Recurse -Path "dist" | ForEach-Object {
+                if (-not $_.PSIsContainer) {
+                    $relativePath = $_.FullName.Substring($distPath.Path.Length + 1) -replace '\\\\', '/'
+                    $entryPath = "dist/$relativePath"
+                    Write-Host "Adding: $entryPath"
+                    $null = $zip.CreateEntryFromFile($_.FullName, $entryPath)
+                }
+            }
 
+            $zip.Dispose()
+            Copy-Item $zipTemp $zipPath -Force
+            Remove-Item $zipTemp -Force
 
-            # Verify ZIP contents for debugging
+            # Verify ZIP contents
             Write-Host "📦 Verifying ZIP contents..."
+            if (Test-Path "verify_zip") { Remove-Item "verify_zip" -Recurse -Force }
             Expand-Archive -Path $zipPath -DestinationPath "verify_zip" -Force
             Get-ChildItem -Recurse "verify_zip"
 
