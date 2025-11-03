@@ -7,15 +7,25 @@ pipeline {
         DOCKER_REGISTRY = "docker.io"
     }
 
-    stages{('Read Version') {
-    steps {
-        script {
-            def pkg = readJSON file: 'package.json'
-            env.VERSION = pkg.version
-            echo "📦 Version set to ${env.VERSION}"
+  stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/vaibhavidhas/Jenkins-Pipeline.git'
+            }
         }
-    }
-}
+
+        stage('Read Version') {
+            steps {
+                script {
+                    def pkg = readJSON file: 'package.json'
+                    env.VERSION = pkg.version
+                    echo "📦 Version set to ${env.VERSION}"
+                }
+            }
+        }
+
+
     stages {
 
         stage('Checkout') {
