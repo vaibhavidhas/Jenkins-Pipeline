@@ -4,22 +4,25 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /usr/src/app
 
-# Install unzip (alpine) and any tools for debugging
+# Install unzip (for Alpine)
 RUN apk add --no-cache unzip
 
-# Copy and unzip your Jenkins artifact
+# Copy Jenkins artifact (ZIP file)
 COPY cl-backend-*.zip ./artifact.zip
+
+# ✅ Unzip artifact so that the /dist folder is extracted as-is
 RUN unzip artifact.zip -d /usr/src/app && rm artifact.zip
 
-# If the artifact contains a package.json, install its production deps
-# (this ensures node_modules match the extracted artifact)
-RUN if [ -f /usr/src/app/package.json ]; then npm install --only=production --prefix /usr/src/app; fi
+# Show extracted structure (for debug)
+RUN echo "📂 Final structure after unzip:" && ls -R /usr/src/app
 
-# Debug listing to confirm files are where you expect
-RUN echo "✅ Contents of /usr/src/app after unzip:" && ls -R /usr/src/app
+# Install dependencies if a package.json exists inside dist
+RUN if [ -f "/usr/src/app/dist/package.json" ]; then \
+      cd /usr/src/app/dist && npm install --only=production; \
+    fi
 
-# Expose the port your app runs on
+# Expose app port
 EXPOSE 3000
 
-# Run the app
-ENTRYPOINT ["node", "server.js"]
+# Start the app from the dist folder
+ENTRYPOINT ["node", "dist/server.js"]
