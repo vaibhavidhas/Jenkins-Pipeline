@@ -41,9 +41,9 @@ stage('Create Artifact') {
         Write-Host "Listing dist contents before compress:"
         Get-ChildItem -Recurse "$workspace\\dist"
 
-        # ✅ Include the 'dist' folder in the ZIP structure
-        Set-Location $workspace
-        Compress-Archive -Path "dist" -DestinationPath $zipName -Force
+         ✅ Include the whole dist folder
+        Compress-Archive -Path "$workspace\\dist" -DestinationPath $zipPath -Force
+        Write-Host "Created zip: $zipPath"
 
         "VERSION=$ver" | Out-File -Encoding ascii "$workspace\\version.txt"
         '''
