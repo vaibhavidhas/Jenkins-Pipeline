@@ -7,7 +7,7 @@ pipeline {
         DOCKER_REGISTRY = "docker.io"
     }
 
-    stage('Read Version') {
+    stages{('Read Version') {
     steps {
         script {
             def pkg = readJSON file: 'package.json'
