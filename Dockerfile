@@ -16,7 +16,8 @@ WORKDIR $APP_HOME
 COPY ./cl-backend-*.zip artifact.zip
 
 # Unzip the artifact (this will create /usr/src/app/dist/)
-RUN unzip -o -qq artifact.zip && rm artifact.zip
+COPY ./cl-backend-*.tar artifact.tar
+RUN tar -xf artifact.tar && rm artifact.tar
 
 # Install only production dependencies (if needed)
 RUN if [ -f package.json ]; then npm install --omit=dev; fi
