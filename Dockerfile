@@ -1,27 +1,26 @@
-FROM ubuntu:22.04
+# Start from a lightweight Node base image (includes Node & npm)
+FROM node:20-alpine
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Set the working directory
+WORKDIR /usr/src/app
 
-RUN apt-get update && \
-    apt-get install -y curl unzip && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    node -v && npm -v
+# Copy package files (required for dependency install)
+COPY package*.json ./
 
-ENV APP_HOME=/usr/src/app
-ENV NODE_ENV=production
-WORKDIR $APP_HOME
+# Install only production dependencies
+RUN npm install --only=production
 
-# Copy the artifact
-COPY ./cl-backend-*.zip artifact.zip
+# Copy your Jenkins artifact (contains dist/server.js)
+COPY ./cl-backend-*.tar ./artifact.tar
 
-# Unzip the artifact (this will create /usr/src/app/dist/)
-COPY ./cl-backend-*.tar artifact.tar
+# Extract the artifact
 RUN tar -xf artifact.tar && rm artifact.tar
 
-# Install only production dependencies (if needed)
-RUN if [ -f package.json ]; then npm install --omit=dev; fi
+# (Optional) verify contents for debugging
+RUN ls -R /usr/src/app
 
+# Expose the app port
 EXPOSE 3000
 
-ENTRYPOINT ["node", "dist/server.js"]
+# Run your built server
+CMD ["node", "dist/server.js"]
