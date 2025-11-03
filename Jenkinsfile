@@ -56,7 +56,7 @@ stage('Package Artifact') {
 $zipTemp = Join-Path $env:TEMP "artifact.zip"
 if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
 
-Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { $_.FullName -replace '\\', '/' }) -DestinationPath $zipTemp -Force
+Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath $zipTemp -Force
 Copy-Item $zipTemp $zipPath -Force
 Remove-Item $zipTemp -Force
 
