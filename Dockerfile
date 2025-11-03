@@ -17,8 +17,10 @@ RUN unzip artifact.zip -d /usr/src/app && rm artifact.zip
 # Check structure for debugging
 RUN ls -R /usr/src/app
 
+RUN echo "✅ Contents of /usr/src/app after unzip:" && ls -R /usr/src/app
+
 # Expose the port your app runs on
 EXPOSE 3000
 
 # Run the app
-CMD ["node", "dist/server.js"]
+ENTRYPOINT ["node", "dist/server.js"]
