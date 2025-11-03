@@ -27,61 +27,20 @@ stage('Package Artifact') {
     steps {
         echo "📦 Creating versioned artifact (with dist folder)..."
         powershell '''
-            # Ensure we are at project root
-            if (-not (Test-Path "dist/server.js")) {
-                Write-Host "⚠️ dist/server.js not found — changing to parent directory..."
-                Set-Location ..
-                if (-not (Test-Path "dist/server.js")) {
-                    Write-Error "❌ dist folder not found!"
-                    exit 1
-                }
-            }
+            Write-Host "📦 Creating versioned artifact (with dist folder)..."
+            $version = (Get-Content package.json | ConvertFrom-Json).version
+            $artifact = "cl-backend-$version.zip"
 
-            # Read version
-            $p = Get-Content -Raw "package.json" | ConvertFrom-Json
-            $ver = $p.version.Trim()
-            Write-Host "Detected version: $ver"
-            "VERSION=$ver" | Out-File -Encoding ascii version.txt
-
-            # Define output file
-            $zipPath = "cl-backend-$ver.zip"
-
-            # Use a UNIQUE temp zip name to avoid conflicts
-            $tempZip = Join-Path $env:TEMP ("artifact_{0}.zip" -f (Get-Random))
-
-            # Cleanup any old files
-            if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-            if (Test-Path $tempZip) { Remove-Item $tempZip -Force }
-
-            # Create zip (includes full dist folder)
             Add-Type -AssemblyName System.IO.Compression.FileSystem
-# Create ZIP with forward slashes (Linux-friendly)
-$zipTemp = Join-Path $env:TEMP "artifact_fixed.zip"
-if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zip = [System.IO.Compression.ZipFile]::Open($zipTemp, [System.IO.Compression.ZipArchiveMode]::Create)
-Get-ChildItem -Recurse -Path "dist" | ForEach-Object {
-    if (-not $_.PSIsContainer) {
-        $entryName = $_.FullName.Substring((Resolve-Path "dist").Path.Length + 1) -replace '\\', '/'
-        $entryPath = "dist/$entryName"
-        $zip.CreateEntryFromFile($_.FullName, $entryPath)
-    }
-}
-$zip.Dispose()
-Copy-Item $zipTemp $zipPath -Force
-Remove-Item $zipTemp -Force
+            if (Test-Path $artifact) { Remove-Item $artifact }
 
+            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $artifact)
 
-            Copy-Item $tempZip $zipPath -Force
-            Remove-Item $tempZip -Force
+            Write-Host "✅ Artifact created: $artifact"
 
-            # Verify contents
-            Write-Host "📦 Verifying ZIP contents..."
-            if (Test-Path "verify_zip") { Remove-Item "verify_zip" -Recurse -Force }
-            Expand-Archive -Path $zipPath -DestinationPath "verify_zip" -Force
-            Get-ChildItem -Recurse "verify_zip"
-            Write-Host "✅ Artifact created: $zipPath"
+            # Output version for Jenkins to capture
+            Write-Output "VERSION=$version" | Out-File -FilePath version.txt -Encoding UTF8
         '''
         script {
             env.VERSION = readFile('version.txt').trim().split('=')[1]
