@@ -25,47 +25,37 @@ pipeline {
         }
 stage('Package Artifact') {
     steps {
-        echo "📦 Creating versioned artifact (including dist folder)..."
+        echo "📦 Creating versioned artifact (with Linux-friendly paths)..."
         powershell '''
-            Write-Host "📦 Creating versioned artifact (including dist folder)..."
+            Write-Host "📦 Creating versioned artifact (Linux-friendly ZIP)..."
             $version = (Get-Content package.json | ConvertFrom-Json).version
             $artifact = "cl-backend-$version.zip"
 
-            # Clean up previous zips if any
             if (Test-Path $artifact) { Remove-Item $artifact -Force }
 
-            # Create a temporary folder to hold dist/
-            $tempDir = "package_temp"
-            if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
-            New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
-
-            # Copy the dist folder inside it
-            Copy-Item -Recurse -Path "dist" -Destination $tempDir
-
-            # Load compression library
+            # Ensure we zip dist/ folder and use forward slashes
             Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-            # Create the zip (now contains the dist/ directory)
-            [System.IO.Compression.ZipFile]::CreateFromDirectory($tempDir, $artifact)
+            $temp = "package_temp"
+            if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
+            New-Item -ItemType Directory -Force -Path $temp | Out-Null
+            Copy-Item -Recurse dist $temp/dist
 
-            # Cleanup temp directory
-            Remove-Item $tempDir -Recurse -Force
+            # Create zip manually to normalize paths
+            $zipPath = Resolve-Path $artifact
+            if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
+            [IO.Compression.ZipFile]::CreateFromDirectory($temp, $zipPath)
+
+            # Normalize paths (replace '\' with '/')
+            $zipBytes = [IO.File]::ReadAllBytes($zipPath)
+            $text = [Text.Encoding]::UTF8.GetString($zipBytes)
+            $text = $text -replace '\\\\', '/'
+            [IO.File]::WriteAllText($zipPath, $text)
+
+            Remove-Item $temp -Recurse -Force
             Write-Host "✅ Artifact created: $artifact"
-
-            # Optional verification
-            if (Test-Path verify_zip) { Remove-Item verify_zip -Recurse -Force }
-            Expand-Archive -Path $artifact -DestinationPath verify_zip -Force
-            Write-Host "📂 Verifying ZIP contents..."
-            Get-ChildItem -Recurse verify_zip
-
-            # Export version for Jenkins
-            "VERSION=$version" | Out-File -Encoding ascii version.txt
         '''
-        script {
-            env.VERSION = readFile('version.txt').trim().split('=')[1]
-            echo "✅ VERSION set to ${env.VERSION}"
-        }
     }
 }
 
