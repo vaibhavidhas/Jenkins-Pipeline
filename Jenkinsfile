@@ -33,7 +33,7 @@ pipeline {
                 echo Detected version: %ver%
 
                 REM Ensure we only zip the dist/server.js file, preserving folder structure (dist/server.js)
-                powershell -Command "$files = Get-ChildItem -Path dist -Recurse | ForEach-Object { $_.FullName -replace '\\\\', '/' }; Compress-Archive -Path $files -DestinationPath cl-backend-%ver%.zip -Force"
+                powershell -Command "Compress-Archive -Path (Get-ChildItem -Recurse -Path dist) -DestinationPath cl-backend-%ver%.zip -Force"
 
                 echo VERSION=%ver% >> version.txt
                 '''
