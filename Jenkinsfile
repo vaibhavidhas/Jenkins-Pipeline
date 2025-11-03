@@ -26,21 +26,26 @@ pipeline {
 
 stage('Package Artifact') {
     steps {
-        echo "Zipping dist folder..."
+        echo "📦 Creating versioned artifact (with dist folder)..."
         powershell '''
+            # Read version from package.json
             $p = Get-Content -Raw "package.json" | ConvertFrom-Json
             $ver = $p.version.Trim()
             Write-Host "Detected version: $ver"
 
-            # Save version for Jenkins env
+            # Save version to version.txt for Jenkins
             "VERSION=$ver" | Out-File -Encoding ascii version.txt
 
+            # Define zip name
             $zipPath = "cl-backend-$ver.zip"
+
+            # Remove old zip if exists
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
-            # ✅ Include the whole dist folder
+            # Compress the dist folder (keep the folder structure)
             Compress-Archive -Path "dist" -DestinationPath $zipPath -Force
-            Write-Host "Artifact created: $zipPath"
+
+            Write-Host "✅ Artifact created: $zipPath"
         '''
         script {
             env.VERSION = readFile('version.txt').trim().split('=')[1]
@@ -55,6 +60,7 @@ stage('Archive Artifact') {
         archiveArtifacts artifacts: "cl-backend-${VERSION}.zip", fingerprint: true
     }
 }
+
 
         stage('Docker Login') {
             steps {
