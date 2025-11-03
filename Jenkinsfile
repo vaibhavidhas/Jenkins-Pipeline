@@ -53,8 +53,25 @@ stage('Package Artifact') {
             # Remove old zip if exists
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
-            # ✅ Create zip with the dist folder itself
-            Compress-Archive -Path $distPath -DestinationPath $zipPath -Force
+         # ✅ Create ZIP with Linux-friendly paths (forward slashes) and include the dist folder
+$zipTemp = Join-Path $env:TEMP "artifact.zip"
+if (Test-Path $zipTemp) { Remove-Item $zipTemp -Force }
+
+# Recursively add files but normalize path separators
+Get-ChildItem -Recurse -Path "dist" | ForEach-Object {
+    $relativePath = $_.FullName.Substring((Resolve-Path "dist").Path.Length + 1) -replace '\\', '/'
+    if (-not $_.PSIsContainer) {
+        $entryPath = "dist/$relativePath"
+        Write-Host "Adding: $entryPath"
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $zip = [System.IO.Compression.ZipFile]::Open($zipTemp, [System.IO.Compression.ZipArchiveMode]::Update)
+        $zip.CreateEntryFromFile($_.FullName, $entryPath)
+        $zip.Dispose()
+    }
+}
+Copy-Item $zipTemp $zipPath -Force
+Remove-Item $zipTemp -Force
+
 
             # Verify ZIP contents for debugging
             Write-Host "📦 Verifying ZIP contents..."
