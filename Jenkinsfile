@@ -88,15 +88,19 @@ stage('Archive Artifact') {
                 }
             }
         }
-        stage('Build Docker Image') {
+stage('Build Docker Image') {
     steps {
-        bat '''
-            echo "Building Docker image..."
-            powershell 'Copy-Item cl-backend-*.zip .'
-            docker build -t vaibhavi2808/cl-backend:%VERSION% .
-        '''
+        echo '"Building Docker image..."'
+        script {
+            def artifactUrl = "${env.BUILD_URL}artifact/cl-backend-${env.VERSION}.zip"
+            echo "Using artifact URL: ${artifactUrl}"
+            bat """
+                docker build --build-arg ARTIFACT_URL=${artifactUrl} -t ${DOCKER_USER}/${APP_NAME}:${env.VERSION} .
+            """
+        }
     }
 }
+
 
         stage('Publish Docker Image') {
             steps {
