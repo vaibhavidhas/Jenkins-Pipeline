@@ -53,7 +53,8 @@ stage('Package Artifact') {
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
             # Convert backslashes to forward slashes before compressing
-            Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath $zipPath -Force
+          Compress-Archive -Path (Get-ChildItem -Recurse -Path "dist" | ForEach-Object { "dist/" + ($_.FullName.Substring((Resolve-Path "dist").Path.Length + 1) -replace '\\', '/') }) -DestinationPath $zipPath -Force
+
 
 
             # Verify ZIP content for debugging
