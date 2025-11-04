@@ -14,7 +14,7 @@ ARG ARTIFACT_FILE
 COPY ${ARTIFACT_FILE} ./artifact.zip
 
 # Unzip the artifact into /usr/src/app
-RUN unzip artifact.zip -d . && rm artifact.zip
+RUN unzip artifact.zip -d . || true && rm artifact.zip
 
 # Expose your backend port (optional)
 EXPOSE 3000
