@@ -36,31 +36,20 @@ pipeline {
 
  stage('Package Artifact') {
     steps {
-        echo "📦 Creating versioned artifact (with dist folder)..."
-        powershell '''
-            $version = (Get-Content package.json | ConvertFrom-Json).version
-            $artifact = "cl-backend-$version.zip"
+        echo "📦 Creating versioned artifact (Linux-friendly ZIP)..."
+        bat """
+            for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do set VERSION=%%~v
+            set VERSION=%VERSION:"=%
+            echo Version: %VERSION%
 
-            if (Test-Path $artifact) { Remove-Item $artifact }
+            if exist cl-backend-%VERSION%.zip del cl-backend-%VERSION%.zip
 
-            # Prepare temp folder containing dist/
-            $temp = "temp_zip_dir"
-            if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
-            New-Item -ItemType Directory -Path $temp | Out-Null
-            Copy-Item -Recurse dist $temp/dist
+            rem Create ZIP using npm (cross-platform, forward slashes)
+            npx bestzip cl-backend-%VERSION%.zip dist/**
 
-            # Create ZIP (with dist folder included)
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::CreateFromDirectory($temp, $artifact)
-
-            # Cleanup temp folder
-            Remove-Item $temp -Recurse -Force
-
-            Write-Host "✅ Artifact created: $artifact"
-            Write-Host "📂 Verifying ZIP contents..."
-            Expand-Archive -Path $artifact -DestinationPath "verify_zip_final" -Force
-            Get-ChildItem -Recurse "verify_zip_final"
-        '''
+            echo ✅ Artifact created: cl-backend-%VERSION%.zip
+            dir
+        """
     }
 }
 
