@@ -47,8 +47,7 @@ stage('Package Artifact') {
             if exist cl-backend-%VERSION%.zip del cl-backend-%VERSION%.zip
 
             echo Creating zip from dist folder...
-            powershell -Command "Compress-Archive -Path dist -DestinationPath cl-backend-%VERSION%.zip -Force
-"
+ powershell -Command "Compress-Archive -Path dist -DestinationPath cl-backend-%VERSION%.zip -Force"
 
             echo ✅ Artifact created: cl-backend-%VERSION%.zip
             dir cl-backend-%VERSION%.zip
