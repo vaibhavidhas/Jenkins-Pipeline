@@ -4,20 +4,24 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /usr/src/app
 
-# Install unzip for Alpine
+# Install unzip
 RUN apk add --no-cache unzip
 
-# Build argument for artifact file
+# Copy dependency manifests
+COPY package*.json ./
+
+# Install production dependencies
+RUN npm install --production
+
+# Build argument for Jenkins artifact
 ARG ARTIFACT_FILE
 
-# Copy the artifact zip from Jenkins build
+# Copy and unzip artifact
 COPY ${ARTIFACT_FILE} ./artifact.zip
+RUN unzip -o artifact.zip -d /usr/src/app && rm artifact.zip
 
-# Unzip the artifact into /usr/src/app
-RUN unzip artifact.zip -d . || true && rm artifact.zip
-
-# Expose your backend port (optional)
+# Expose the backend port
 EXPOSE 3000
 
-# Run the server from the dist folder
+# Start the server
 CMD ["node", "dist/server.js"]
