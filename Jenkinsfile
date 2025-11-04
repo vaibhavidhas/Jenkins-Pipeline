@@ -39,7 +39,8 @@ stage('Package Artifact') {
         echo "📦 Creating versioned artifact (keeping dist/ folder)..."
         bat '''
         REM === Read version from package.json ===
-        for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do set VERSION=%%~v
+        for /f %%v in ('powershell -NoProfile -Command "(Get-Content package.json | ConvertFrom-Json).version"') do set VERSION=%%v
+
         set VERSION=%VERSION:"=%
 
         echo Version detected: %VERSION%
