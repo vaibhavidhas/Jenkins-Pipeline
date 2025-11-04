@@ -36,7 +36,7 @@ pipeline {
 
 stage('Package Artifact') {
     steps {
-        echo "📦 Creating versioned artifact..."
+        echo "📦 Creating versioned artifact (keeping dist/ folder)..."
         bat '''
         REM === Read version from package.json ===
         for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do set VERSION=%%~v
@@ -44,16 +44,21 @@ stage('Package Artifact') {
 
         echo Version detected: %VERSION%
 
-        REM === Remove any existing zip ===
+        REM === Clean old zips ===
         if exist cl-backend-%VERSION%.zip del /f cl-backend-%VERSION%.zip
 
-        REM === Use PowerShell to zip folder with proper structure ===
+        REM === Use PowerShell to zip dist folder INCLUDING folder name ===
         powershell -NoLogo -NoProfile -Command ^
+          "$version = '%VERSION%';" ^
           "$src = 'dist';" ^
-          "$dest = 'cl-backend-%VERSION%.zip';" ^
-          "if (Test-Path $dest) { Remove-Item $dest };" ^
+          "$temp = 'package_temp';" ^
+          "$dest = 'cl-backend-' + $version + '.zip';" ^
+          "if (Test-Path $temp) { Remove-Item -Recurse -Force $temp };" ^
+          "New-Item -ItemType Directory -Path $temp | Out-Null;" ^
+          "Copy-Item -Recurse $src $temp\\dist;" ^
           "Add-Type -AssemblyName 'System.IO.Compression.FileSystem';" ^
-          "[System.IO.Compression.ZipFile]::CreateFromDirectory($src, $dest);" ^
+          "[System.IO.Compression.ZipFile]::CreateFromDirectory($temp, $dest);" ^
+          "Remove-Item -Recurse -Force $temp;" ^
           "Write-Host '✅ Artifact created:' $dest;"
         '''
     }
