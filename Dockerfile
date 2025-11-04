@@ -16,11 +16,11 @@ RUN npm install --production
 # Build argument for Jenkins artifact
 ARG ARTIFACT_FILE
 
-# Copy and unzip artifact
+# Copy and unzip artifact (ignore unzip warning exit code)
 COPY ${ARTIFACT_FILE} ./artifact.zip
-RUN unzip -o artifact.zip -d /usr/src/app && rm artifact.zip
+RUN unzip -o artifact.zip -d /usr/src/app || true && rm artifact.zip
 
-# Expose the backend port
+# Expose backend port
 EXPOSE 3000
 
 # Start the server
