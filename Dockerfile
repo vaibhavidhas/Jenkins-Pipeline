@@ -16,7 +16,7 @@ RUN npm install --production
 # Build argument for Jenkins artifact
 ARG ARTIFACT_FILE
 
-# Copy and unzip artifact (ignore unzip warning exit code)
+# Copy and unzip artifact (ignore unzip warning exit code and delete zip file)
 COPY ${ARTIFACT_FILE} ./artifact.zip
 RUN unzip -o artifact.zip -d /usr/src/app || true && rm artifact.zip
 
