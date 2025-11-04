@@ -34,24 +34,28 @@ pipeline {
             }
         }
 
- stage('Package Artifact') {
+stage('Package Artifact') {
     steps {
-        echo "📦 Creating versioned artifact (Linux-friendly ZIP)..."
-        bat """
-            for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do set VERSION=%%~v
-            set VERSION=%VERSION:"=%
+        echo "📦 Creating versioned artifact..."
+        bat '''
+            for /f "usebackq tokens=2 delims=:," %%v in (`findstr "version" package.json`) do (
+                set VERSION=%%~v
+            )
+            set VERSION=%VERSION: =%
             echo Version: %VERSION%
-
+            
             if exist cl-backend-%VERSION%.zip del cl-backend-%VERSION%.zip
 
-            rem Create ZIP using npm (cross-platform, forward slashes)
-            npx bestzip cl-backend-%VERSION%.zip dist/**
+            echo Creating zip from dist folder...
+            powershell -Command "Compress-Archive -Path dist -DestinationPath cl-backend-%VERSION%.zip -Force
+"
 
             echo ✅ Artifact created: cl-backend-%VERSION%.zip
-            dir
-        """
+            dir cl-backend-%VERSION%.zip
+        '''
     }
 }
+
 
         stage('Archive Artifact') {
             steps {
