@@ -18,7 +18,7 @@ ARG ARTIFACT_FILE
 
 # Copy and unzip artifact (ignore unzip warning exit code)
 COPY ${ARTIFACT_FILE} ./artifact.zip
-RUN unzip -o artifact.zip -d /usr/src/app 
+RUN unzip -o artifact.zip -d /usr/src/app || true && rm artifact.zip
 
 # Expose backend port
 EXPOSE 3000
