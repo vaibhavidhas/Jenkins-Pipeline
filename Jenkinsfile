@@ -7,6 +7,10 @@ pipeline {
         DOCKER_REGISTRY = "docker.io"
     }
 
+    triggers {
+        githubPush()
+    }
+
     stages {
 
         stage('Checkout') {
@@ -34,37 +38,37 @@ pipeline {
             }
         }
 
-stage('Package Artifact') {
-    steps {
-        echo "📦 Creating versioned artifact (keeping dist/ folder)..."
-        bat '''
-        REM === Read version from package.json ===
-        for /f %%v in ('powershell -NoProfile -Command "(Get-Content package.json | ConvertFrom-Json).version"') do set VERSION=%%v
-
-        set VERSION=%VERSION:"=%
-
-        echo Version detected: %VERSION%
-
-        REM === Clean old zips ===
-        if exist cl-backend-%VERSION%.zip del /f cl-backend-%VERSION%.zip
-
-        REM === Use PowerShell to zip dist folder INCLUDING folder name ===
-        powershell -NoLogo -NoProfile -Command ^
-          "$version = '%VERSION%';" ^
-          "$src = 'dist';" ^
-          "$temp = 'package_temp';" ^
-          "$dest = 'cl-backend-' + $version + '.zip';" ^
-          "if (Test-Path $temp) { Remove-Item -Recurse -Force $temp };" ^
-          "New-Item -ItemType Directory -Path $temp | Out-Null;" ^
-          "Copy-Item -Recurse $src $temp\\dist;" ^
-          "Add-Type -AssemblyName 'System.IO.Compression.FileSystem';" ^
-          "[System.IO.Compression.ZipFile]::CreateFromDirectory($temp, $dest);" ^
-          "Remove-Item -Recurse -Force $temp;" ^
-          "Write-Host '✅ Artifact created:' $dest;"
-        '''
-    }
-}
-
+        stage('Package Artifact') {
+            steps {
+                echo "📦 Creating versioned artifact (keeping dist/ folder)..."
+                bat '''
+                REM === Read version from package.json ===
+                for /f %%v in ('powershell -NoProfile -Command "(Get-Content package.json | ConvertFrom-Json).version"') do set VERSION=%%v
+        
+                set VERSION=%VERSION:"=%
+        
+                echo Version detected: %VERSION%
+        
+                REM === Clean old zips ===
+                if exist cl-backend-%VERSION%.zip del /f cl-backend-%VERSION%.zip
+        
+                REM === Use PowerShell to zip dist folder INCLUDING folder name ===
+                powershell -NoLogo -NoProfile -Command ^
+                  "$version = '%VERSION%';" ^
+                  "$src = 'dist';" ^
+                  "$temp = 'package_temp';" ^
+                  "$dest = 'cl-backend-' + $version + '.zip';" ^
+                  "if (Test-Path $temp) { Remove-Item -Recurse -Force $temp };" ^
+                  "New-Item -ItemType Directory -Path $temp | Out-Null;" ^
+                  "Copy-Item -Recurse $src $temp\\dist;" ^
+                  "Add-Type -AssemblyName 'System.IO.Compression.FileSystem';" ^
+                  "[System.IO.Compression.ZipFile]::CreateFromDirectory($temp, $dest);" ^
+                  "Remove-Item -Recurse -Force $temp;" ^
+                  "Write-Host '✅ Artifact created:' $dest;"
+                '''
+            }
+        }
+        
         stage('Archive Artifact') {
             steps {
                 echo "Archiving build artifact..."
