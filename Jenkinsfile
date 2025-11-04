@@ -34,25 +34,27 @@ pipeline {
             }
         }
 
-        stage('Package Artifact') {
+ stage('Package Artifact') {
     steps {
-        echo "📦 Creating versioned artifact (Linux-friendly ZIP)..."
+        echo "📦 Creating versioned artifact (with dist folder)..."
         powershell '''
             $version = (Get-Content package.json | ConvertFrom-Json).version
             $artifact = "cl-backend-$version.zip"
 
             if (Test-Path $artifact) { Remove-Item $artifact }
 
-            # Create ZIP with Linux-friendly paths
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $artifact)
+            # Prepare temp folder containing dist/
+            $temp = "temp_zip_dir"
+            if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
+            New-Item -ItemType Directory -Path $temp | Out-Null
+            Copy-Item -Recurse dist $temp/dist
 
-            # Fix backslashes -> forward slashes inside ZIP entries
-            $tempDir = "verify_zip"
-            if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }
-            Expand-Archive -Path $artifact -DestinationPath $tempDir -Force
-            Remove-Item $artifact
-            Compress-Archive -Path (Get-ChildItem -Recurse $tempDir | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath $artifact -Force
+            # Create ZIP (with dist folder included)
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::CreateFromDirectory($temp, $artifact)
+
+            # Cleanup temp folder
+            Remove-Item $temp -Recurse -Force
 
             Write-Host "✅ Artifact created: $artifact"
             Write-Host "📂 Verifying ZIP contents..."
@@ -61,7 +63,6 @@ pipeline {
         '''
     }
 }
-
 
         stage('Archive Artifact') {
             steps {

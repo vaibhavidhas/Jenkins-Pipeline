@@ -19,4 +19,4 @@ WORKDIR /usr/src/app/dist
 RUN npm install --omit=dev || true
 
 # Start the app
-CMD ["node", "server.js"]
+CMD ["node", "dist/server.js"]
