@@ -11,10 +11,10 @@ RUN apk add --no-cache unzip
 ARG ARTIFACT_FILE
 
 # Copy the artifact zip from Jenkins build
-COPY ${ARTIFACT_FILE} ./app.zip
+COPY ${ARTIFACT_FILE} ./artifact.zip
 
 # Unzip the artifact into /usr/src/app
-RUN unzip app.zip -d . && rm app.zip
+RUN unzip artifact.zip -d . && rm artifact.zip
 
 # Expose your backend port (optional)
 EXPOSE 3000

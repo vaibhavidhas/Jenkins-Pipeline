@@ -37,23 +37,24 @@ pipeline {
 stage('Package Artifact') {
     steps {
         echo "📦 Creating versioned artifact..."
-        powershell '''
-            $version = (Get-Content package.json | ConvertFrom-Json).version.Trim('"')
-            $artifact = "cl-backend-$version.zip"
+        bat '''
+        REM === Read version from package.json ===
+        for /f "tokens=2 delims=:," %%v in ('findstr "version" package.json') do set VERSION=%%~v
+        set VERSION=%VERSION:"=%
 
-            if (Test-Path $artifact) { Remove-Item $artifact }
+        echo Version detected: %VERSION%
 
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::CreateFromDirectory("dist", $artifact)
+        REM === Remove any existing zip ===
+        if exist cl-backend-%VERSION%.zip del /f cl-backend-%VERSION%.zip
 
-            # Normalize paths inside the ZIP
-            $tempDir = "zip_normalized"
-            if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }
-            Expand-Archive -Path $artifact -DestinationPath $tempDir -Force
-            Remove-Item $artifact
-            Compress-Archive -Path (Get-ChildItem -Recurse $tempDir | ForEach-Object { $_.FullName -replace '\\\\', '/' }) -DestinationPath $artifact -Force
-
-            Write-Host "✅ Linux-friendly ZIP created: $artifact"
+        REM === Use PowerShell to zip folder with proper structure ===
+        powershell -NoLogo -NoProfile -Command ^
+          "$src = 'dist';" ^
+          "$dest = 'cl-backend-%VERSION%.zip';" ^
+          "if (Test-Path $dest) { Remove-Item $dest };" ^
+          "Add-Type -AssemblyName 'System.IO.Compression.FileSystem';" ^
+          "[System.IO.Compression.ZipFile]::CreateFromDirectory($src, $dest);" ^
+          "Write-Host '✅ Artifact created:' $dest;"
         '''
     }
 }
@@ -80,8 +81,7 @@ stage('Package Artifact') {
             steps {
                 echo "🛠 Building Docker image using local artifact..."
                 bat """
-                    copy cl-backend-%VERSION%.zip .\\artifact.zip
-                    docker build --build-arg ARTIFACT_FILE=artifact.zip -t %DOCKER_USER%/%APP_NAME%:%VERSION% .
+                     docker build --build-arg ARTIFACT_FILE=cl-backend-%VERSION%.zip -t %DOCKER_USER%/%APP_NAME%:%VERSION% .
                 """
             }
         }
